@@ -29,6 +29,7 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
             user = Spree::User.find_by_email(auth_hash['info']['email']) || Spree::User.new
             user.apply_omniauth(auth_hash)
             if user.save
+              user.add_tokens_from_omniauth
               flash[:notice] = I18n.t("devise.omniauth_callbacks.success", :kind => auth_hash['provider'])
               sign_in_and_redirect :spree_user, user
             else
@@ -65,4 +66,9 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   def auth_hash
     request.env["omniauth.auth"]
   end
+
+  def current_store
+    Spree::Store.first
+  end
+
 end
