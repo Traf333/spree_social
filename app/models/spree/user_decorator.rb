@@ -13,7 +13,4 @@ Spree.user_class.class_eval do
   def password_required?
     (user_authentications.empty? || !password.blank?) && super
   end
-  def email_required?
-    (user_authentications.empty? || !email.blank?) && super
-  end
 end
