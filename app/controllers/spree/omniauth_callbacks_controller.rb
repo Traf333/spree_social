@@ -3,6 +3,7 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   include Spree::Core::ControllerHelpers::Order
   include Spree::Core::ControllerHelpers::Auth
   include Spree::Core::ControllerHelpers::SSL
+  include Auth
 
   def self.provides_callback_for(*providers)
     providers.each do |provider|
@@ -28,6 +29,9 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
           else
             user = Spree::User.find_by_email(auth_hash['info']['email']) || Spree::User.new
             user.apply_omniauth(auth_hash)
+            authentication = user.user_authentications.first
+            user.email = "#{authentication.uid}@#{authentication.provider}.com" if user.email.blank?
+            create_user_on_publisher(user) if user.new_record?
             if user.save
               user.add_tokens_from_omniauth
               flash[:notice] = I18n.t("devise.omniauth_callbacks.success", :kind => auth_hash['provider'])
@@ -69,6 +73,33 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
 
   def current_store
     Spree::Store.first
+  end
+
+  def create_user_on_publisher(user)
+    password = '12345678'
+    password_confirmation = '12345678'
+    url = publisher_url + "/signup"
+    begin
+      options = {full_name: user.full_name, email: user.email, subscribed_to_newsletter: 0, password:password, password_confirmation:password_confirmation, origin:"atbstore"}
+
+      response =  RestClient.post(url, {account_type:"student", user:options})
+      if response.code != 200
+        flash[:error] = I18n.t("home.cannot_create_user")
+        return
+      end
+
+      parsed_response = JSON.parse(response)
+      if parsed_response["error"]
+        flash[:error] = parsed_response["error"]
+        return
+      end
+
+      access_token = omniauth_client.password.get_token(user.email, password)
+
+      user[:authentication_token] = access_token.token
+      user[:perishable_token] = access_token.refresh_token
+    end
+
   end
 
 end
