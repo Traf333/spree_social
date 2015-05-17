@@ -79,8 +79,9 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
     password = '12345678'
     password_confirmation = '12345678'
     url = publisher_url + "/signup"
+    full_name = user.full_name.present? ? user.full_name : "user from #{authentication.provider}"
     begin
-      options = {full_name: user.full_name, email: user.email, subscribed_to_newsletter: 0, password:password, password_confirmation:password_confirmation, origin:"atbstore"}
+      options = {full_name: full_name, email: user.email, subscribed_to_newsletter: 0, password:password, password_confirmation:password_confirmation, origin:"atbstore"}
 
       response =  RestClient.post(url, {account_type:"student", user:options})
       if response.code != 200
