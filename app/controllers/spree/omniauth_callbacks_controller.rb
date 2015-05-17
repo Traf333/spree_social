@@ -29,8 +29,6 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
           else
             user = Spree::User.find_by_email(auth_hash['info']['email']) || Spree::User.new
             user.apply_omniauth(auth_hash)
-            authentication = user.user_authentications.first
-            user.email = "#{authentication.uid}@#{authentication.provider}.com" if user.email.blank?
             create_user_on_publisher(user) if user.new_record?
             if user.save
               user.add_tokens_from_omniauth
@@ -76,6 +74,8 @@ class Spree::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   end
 
   def create_user_on_publisher(user)
+    authentication = user.user_authentications.first
+    user.email = "#{authentication.uid}@#{authentication.provider}.com" if user.email.blank?
     password = '12345678'
     password_confirmation = '12345678'
     url = publisher_url + "/signup"
